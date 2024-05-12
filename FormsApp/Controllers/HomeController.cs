@@ -21,7 +21,7 @@ namespace FormsApp.Controllers
             if(!string.IsNullOrEmpty(searchString))
             {
                 ViewBag.SearchString = searchString;
-                products=products.Where(p  => p.Name.ToLower().Contains(searchString)).ToList();
+                products=products.Where(p  => p.Name!.ToLower().Contains(searchString)).ToList();
 
             }
             if (!string.IsNullOrEmpty(category)&& category!="0") 
@@ -45,12 +45,30 @@ namespace FormsApp.Controllers
             return View();
         }
         [HttpPost]
-        public IActionResult Create(Product model)
-
+        public async Task<IActionResult> Create(Product model, IFormFile ImageFile) 
+            
         {
+            var allowedExtensions = new[] { ".jpg", ".jpeg", ".png" };
+            var extension = Path.GetExtension(ImageFile.FileName);
+            var randomFileName = string.Format($"{Guid.NewGuid().ToString()}{extension}");
+            var path = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/img", randomFileName);
+             
+            if (ImageFile!=null)
+            {
+                if (!allowedExtensions.Contains(extension))
+                {
+                    ModelState.AddModelError("", "GEÇERLİ BİR RESİM SEÇİNİZ");
+                }
+            }
+
             if (ModelState.IsValid)
             {
-                model.ProductId=Repository.Products.Count + 1;
+                using (var stream = new FileStream(path, FileMode.Create))
+                {
+                    await ImageFile.CopyToAsync(stream);
+                }
+                model.Image = randomFileName;
+                model.ProductId = Repository.Products.Count + 1;
                 Repository.CreateProduct(model);
                 return RedirectToAction("Index");
             }

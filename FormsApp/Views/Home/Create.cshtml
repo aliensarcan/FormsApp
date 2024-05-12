@@ -4,7 +4,7 @@
     ViewData["Title"] = "Create";
 }
  
-<form asp-controller="Home" asp-action="Create" method="post">
+<form asp-controller="Home" asp-action="Create" method="post" enctype="multipart/form-data">
     <div asp-validation-summary="All"></div>
     <div class="mb-3">
         <label asp-for=" Name" class=" form-label"></label>
@@ -19,9 +19,7 @@
     </div>
 
     <div class="mb-3">
-        <label asp-for="Image" class="form-label"></label>
-        <input asp-for="Image" class="form-control" /> 
-        <span asp-validation-for="Image"></span>
+        <input type="file" name="ImageFile" id="Imagefile" class="form-control"
     </div>
 
     <div class="mb-3">
