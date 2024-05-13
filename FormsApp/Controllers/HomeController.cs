@@ -2,6 +2,8 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using System.Diagnostics;
+using System.IO;
+using System.Reflection;
 
 namespace FormsApp.Controllers
 {
@@ -45,37 +47,98 @@ namespace FormsApp.Controllers
             return View();
         }
         [HttpPost]
-        public async Task<IActionResult> Create(Product model, IFormFile ImageFile) 
-            
+        public async Task<IActionResult> Create(Product model, IFormFile ImageFile)
         {
+            //if (ImageFile == null)
+            //{
+            //    ModelState.AddModelError("", "Lütfen bir resim seçin.");
+            //    ViewBag.Categories = new SelectList(Repository.Categories, "CategoryId", "Name");
+            //    return View(model);
+            //}
+
             var allowedExtensions = new[] { ".jpg", ".jpeg", ".png" };
             var extension = Path.GetExtension(ImageFile.FileName);
             var randomFileName = string.Format($"{Guid.NewGuid().ToString()}{extension}");
             var path = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/img", randomFileName);
-             
-            if (ImageFile!=null)
+
+            if (!allowedExtensions.Contains(extension))
             {
-                if (!allowedExtensions.Contains(extension))
-                {
-                    ModelState.AddModelError("", "GEÇERLİ BİR RESİM SEÇİNİZ");
-                }
+                
+                ViewBag.Categories = new SelectList(Repository.Categories, "CategoryId", "Name");
+                return View(model);
             }
 
             if (ModelState.IsValid)
             {
-                using (var stream = new FileStream(path, FileMode.Create))
+                if (ImageFile != null)
                 {
-                    await ImageFile.CopyToAsync(stream);
+                    using(var stream = new FileStream(path, FileMode.Create))
+                {
+                        await ImageFile.CopyToAsync(stream);
+                    }
                 }
+                
                 model.Image = randomFileName;
                 model.ProductId = Repository.Products.Count + 1;
                 Repository.CreateProduct(model);
                 return RedirectToAction("Index");
             }
+
             ViewBag.Categories = new SelectList(Repository.Categories, "CategoryId", "Name");
             return View(model);
         }
 
 
+        public IActionResult Edit(int? id) 
+        {
+            if (id == null)
+            {
+                return NotFound();
+            }
+            var entity = Repository.Products.FirstOrDefault(p => p.ProductId == id);
+            if (entity == null)
+            {
+                return NotFound();
+            }
+            ViewBag.Categories = new SelectList(Repository.Categories, "CategoryId", "Name");
+            return View(entity);
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> Edit(int id, Product Model, IFormFile? ImageFile)
+        {
+            if(id!=Model.ProductId)
+            {
+                return NotFound();
+            }
+
+            if(ModelState.IsValid)
+            {
+                
+                if (ImageFile != null)
+                {
+                   
+                    var extension = Path.GetExtension(ImageFile.FileName);
+                    var randomFileName = string.Format($"{Guid.NewGuid().ToString()}{extension}");
+                    var path = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/img", randomFileName);
+                    
+                    using (var stream = new FileStream(path, FileMode.Create))
+                    {
+                        await ImageFile.CopyToAsync(stream);
+                    }
+
+                    Model.Image = randomFileName;
+                }
+                Repository.EditProduct(Model);
+                return RedirectToAction("Index");
+            }
+            ViewBag.Categories = new SelectList(Repository.Categories, "CategoryId", "Name");
+            return View(Model);
+        }
+
+
+
     }
+
+         
 }
